@@ -1,6 +1,24 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+    <script>
+        //发起一个异步请求,去问服务器有没有session (就是问服务器有没有登录成功)
+            var xhr=new XMLHttpRequest();
+     
+            xhr.open('get','api/checkLogin.php');
+     
+            xhr.send();
+     
+            xhr.onreadystatechange=function(){
+               if(xhr.readyState !==4 ) return;
+     
+               if (xhr.responseText != "ok") {
+                 location= "login.html";
+                 return;
+                 
+               }
+            }
+       </script>
   <meta charset="utf-8">
   <title>Users &laquo; Admin</title>
   <link rel="stylesheet" href="../assets/vendors/bootstrap/css/bootstrap.css">
@@ -17,7 +35,7 @@
       <button class="btn btn-default navbar-btn fa fa-bars"></button>
       <ul class="nav navbar-nav navbar-right">
         <li><a href="profile.html"><i class="fa fa-user"></i>个人中心</a></li>
-        <li><a href="login.html"><i class="fa fa-sign-out"></i>退出</a></li>
+       <a href="api/logout.php">             <i class="fa fa-sign-out"></i>退出</a>
       </ul>
     </nav>
     <div class="container-fluid">
@@ -117,7 +135,7 @@
 
   <div class="aside">
     <div class="profile">
-      <img class="avatar" src="../uploads/avatar.jpg">
+      <img class="avatar" src="../assets/img/default.png">
       <h3 class="name">布头儿</h3>
     </div>
     <ul class="nav">

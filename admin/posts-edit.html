@@ -76,7 +76,7 @@
           <div class="form-group">
             <label for="feature">特色图像</label>
             <!-- show when image chose -->
-            <img id="thumbnail" class="help-block thumbnail" style="display: none">
+            <img id="thumbnail"  class="help-block thumbnail" style="display: none">
             <input id="feature" class="form-control" name="feature" type="file">
           </div>
           <div class="form-group">
@@ -130,7 +130,7 @@
           </li>
         </ul>
       </li>
-      <li></li>
+      <li>
         <a href="comments.html">
           <i class="fa fa-comments"></i>评论</a>
       </li>
@@ -178,14 +178,15 @@
   //调用editor
   editor.create();
 
-  $('#created').val(moment().format('YYYY-MM-DDTHH:mm'));
 
   //给上传文件加预览功能
   $('#feature').change(function () {
+    //转换成临时的url
     var url = URL.createObjectURL(this.files[0]);
     $('#thumbnail').attr('src', url).show();
   })
-
+  
+  //请求获得分类的接口
   $.get({
 
     url: "api/getCategory.php",
@@ -204,71 +205,63 @@
       }
     }
   })
+ // 通过get传值,如果获取到网址中? 和?后面id的那部分?
+  //解决方法:从=后面一位开始截取
+  var id=location.search.substr(location.search.indexOf('=')+1);
 
-  //  2.前端界面，给保存按钮加一个id，和点击事件
+//   console.log(id);
+  
+   
+   $.get({
+       url:"api/getPostsDetail.php",
+       data:{id:id},
+       dataType:'json',
+       success:function(obj){
+          // console.log(obj);
+           
+         //把title的内容跟获取的响应体数据库字段名相对应
+         $('#title').val(obj.title);
+         //富文本的是插件,所以给值要按照插件的文档方法来操作 对应的还是的响应体数据库字段名
+         editor.txt.html(obj.content);
+          //操作图片标签的src属性跟获取的响应体数据库字段名相对应 默认是隐藏  这边给它显示
+         $('#thumbnail').attr('src',obj.feature).show();
+         //时间文本框用的是插件,把数据库保存的时间，转换成这个元素需要的格式
+         $('#created').val(moment(obj.created).format('YYYY-MM-DDTHH:mm'));
+         //状态下拉框
+         $('#status').val(obj.status);
+         //别名文本框
+         $('#slug').val(obj.slug);
+         //分类下拉框
+         $('#category').val(obj.category_id);
+       }
+   })
+         
+  //给保存加一个点击事件
   $('#btn-primary').click(function (e) {
      //阻止事件默认行为
        e=e || window.event;
        e.preventDefault();
+   
+    //快速拿到表单数据,用formdata,也还能上传文件
+    var fm=new FormData(document.querySelector('form'));
+     fm.append('content',editor.txt.html());
+     fm.append('id',id);
 
-
-    //   点击事件里，创建一个formdata对象，传入一个表单
-    var fm = new FormData(document.querySelector('form'));
-
-    // 再用fm的append方法，添加富文本的内容
-    fm.append('content', editor.txt.html());
-
-    //用原生js发一个请求
-    /*
-    var xhr = new XMLHttpRequest();
-    xhr.open('post', 'api/addPosts.php');
-    xhr.send(fm);
-
-    xhr.onload = function () {
-
-      if (xhr.responseText.trim() == "ok") {
-
-        alert('成功');
-      } else {
-
-        alert('新增失败');
-      }
-    }
-    */
-
-   //用JQuery发送一个formdata请求 存在问题点:
-     //1.因为jquery默认不支持FormData，所以你要么发原生请求，要么做一些改动,因为jquery会自动设置请求头，而formdata也会自动设置请求头，所以它们两在一起就冲突了
-    //  解决方法:让jquery禁用设置请求头的contentType属性改成false,  
-
-     //2.如果提交的参数是一个对象的话，那么jquery会自动把这个对象转化为字符串,但是我们现在提交的是formdata也是一个对象，但是它不需要jquery做转换，而jquery默认会转换，所以也会报错  
-     //解决方法: 阻止jquery转换的processData属性改成false 让jQuery不要转换对象
-
-       $.post({
-            url:"api/addPosts.php",
-            data:fm,
-            processData:false,
-            contentType:false,
-            success:function(obj){
-              //console.log(obj);
-              
-                if (obj == "ok") {
-                  alert('新增成功');
-                  location="posts.html"
-                }else{
-                  alert("新增失败");
-                }
+     $.post({
+         url:"api/updatePosts.php",
+         data:fm,
+         processData:false,
+         contentType:false,
+         success:function(obj){
+            //  console.log(obj);
+             
+            if (obj.trim()=='ok') {
+                  location="posts.html";
+            }else{
+                   alert("修改失败");
             }
-
-
-       })
-
-
-
-  
-
-
-
-
+         }
+     })
 
   })
 </script>

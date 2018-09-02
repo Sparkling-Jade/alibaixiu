@@ -1,6 +1,24 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+    <script>
+        //发起一个异步请求,去问服务器有没有session (就是问服务器有没有登录成功)
+            var xhr=new XMLHttpRequest();
+     
+            xhr.open('get','api/checkLogin.php');
+     
+            xhr.send();
+     
+            xhr.onreadystatechange=function(){
+               if(xhr.readyState !==4 ) return;
+     
+               if (xhr.responseText != "ok") {
+                 location= "login.html";
+                 return;
+                 
+               }
+            }
+       </script>
   <meta charset="utf-8">
   <title>Categories &laquo; Admin</title>
   <link rel="stylesheet" href="../assets/vendors/bootstrap/css/bootstrap.css">
@@ -17,7 +35,7 @@
       <button class="btn btn-default navbar-btn fa fa-bars"></button>
       <ul class="nav navbar-nav navbar-right">
         <li><a href="profile.html"><i class="fa fa-user"></i>个人中心</a></li>
-        <li><a href="login.html"><i class="fa fa-sign-out"></i>退出</a></li>
+       <a href="api/logout.php">             <i class="fa fa-sign-out"></i>退出</a>
       </ul>
     </nav>
     <div class="container-fluid">
@@ -42,14 +60,16 @@
               <p class="help-block">https://zce.me/category/<strong>slug</strong></p>
             </div>
             <div class="form-group">
-              <button class="btn btn-primary" type="submit">添加</button>
+              <button id="btn" class="btn btn-primary" type="submit">添加</button>
+              <!-- 3.7 在html里新增一个按钮叫取消（记得改样式） -->
+              <button id="cancel" class="btn btn-default" type="submit" disaplay="none">取消</button>
             </div>
           </form>
         </div>
         <div class="col-md-8">
           <div class="page-action">
             <!-- show when multiple checked -->
-            <a class="btn btn-danger btn-sm" href="javascript:;" style="display: none">批量删除</a>
+            <a id="btn-detele" class="btn btn-danger btn-sm" href="javascript:;" style="display: none">批量删除</a>
           </div>
           <table class="table table-striped table-bordered table-hover">
             <thead>
@@ -97,7 +117,7 @@
 
   <div class="aside">
     <div class="profile">
-      <img class="avatar" src="../uploads/avatar.jpg">
+      <img class="avatar" src="../assets/img/default.png">
       <h3 class="name">布头儿</h3>
     </div>
     <ul class="nav">
@@ -135,6 +155,259 @@
 
   <script src="../assets/vendors/jquery/jquery.js"></script>
   <script src="../assets/vendors/bootstrap/js/bootstrap.js"></script>
+  <script src="../assets/vendors/template-web.js"></script>
   <script>NProgress.done()</script>
 </body>
 </html>
+
+ <script type="text/html" id="tpl">
+  {{each list value}}
+  <tr>
+    <td class="text-center"><input type="checkbox" value={{value.id}}></td>
+    <td>{{value.name}}</td>
+    <td>{{value.slug}}</td>
+    <td class="text-center">
+      <a href="javascript:editTr({{value.id}});" class="btn btn-info btn-xs">编辑</a>
+      <a href="javascript:deteleTr({{value.id}});" class="btn btn-danger btn-xs">删除</a>
+    </td>
+  </tr>
+
+  {{/each}}
+</script>
+
+ <script>
+
+   //3.2 准备一个全局变量用来记录查到的数据，
+   var list;
+   //3.1 准备一个全局变量用来记录要修改的id
+   var globalID;
+
+   function locaData(){
+      $.get({
+       url:"api/getCategory.php",
+       dataType:"json",
+       success:function(obj){
+      //  在loadData的响应完成时，把数据存在全局变量
+          list=obj;
+           //调用模板
+           var html=template('tpl',{list:obj});
+           $('tbody').html(html);
+       }
+   })
+   
+   }
+
+   locaData()
+
+   
+ $('#btn').click(function(e){
+     //清空默认事件
+     e=e || window.event;
+     e.preventDefault();
+
+    //  因为新增和修改都是调用同一个点击事件，所以在它这个按钮的点击事件里判断文字，如果文字是保存，那么就发保存的请求，否则就发新增的请求   （请求里要发id，所以准备一个全局变量，在编辑的点击事件里记录住id）
+    if($('#btn').html()== "保存"){
+          //发送一个保存(修改)的请求
+          $.post({
+              url:"api/updateCategory.php",
+              data:{id:globalID, name:$('#name').val(), slug:$('#slug').val()},
+              success:function(obj){
+                 //console.log(obj);
+                 
+                  if (obj.trim() == "ok") {
+                        locaData();
+                        $('#cancel').click()
+                  }else{
+                     alert("修改失败");
+                  }
+              }
+          })
+
+    }else{
+        //发送一个添加(新增)请求
+     $.post({
+       
+       url:"api/addCategory.php",
+       data:{slug:$('#slug').val(),name:$('#name').val()},
+       success:function(obj){
+            if(obj.trim()=="ok"){
+                 locaData();
+                 $('#slug').val('');
+                 $('#name').val('');
+            }else{
+               alert("新增失败");
+            }
+          
+       }
+   });
+
+    }
+
+ })
+
+ //3.写一个函数接收一个id参数，在模板里给编辑加点击事件，调用这个函数并传入自己的id
+   function editTr(id){
+       // console.log(id);
+        globalID=id;
+
+        //3.4 在编辑的点击事件里，遍历所有的数据，判断传进的来id是否等于当前遍历到的元素的id，
+         // id=globalID;
+
+         for(var i=0;i<list.length;i++){
+               if (id == list[i].id) {
+                //3.5 如果等于，代表找到了，就把这个数据渲染到界面
+                     $('#name').val(list[i].name);
+                     $('#slug').val(list[i].slug);
+                 
+                 //3.6 将之前新增那个按钮的文字添加,变为文字保存     
+                     $('#btn').html("保存");
+                //3.8  把取消按钮变为显示  show()
+                 $('#cancel').show();
+                 break;//结束这个循环语句
+               }
+               
+        }
+   }
+
+   //取消按钮的点击事件
+    $('#cancel').click(function (e) { 
+
+      e =e || window.event;
+      e.preventDefault();
+
+      //清空显示在文本框里的文字
+       $('#name').val('');
+       $('#slug').val('');
+
+     //把取消按钮自己本身隐藏
+      $(this).hide();
+      // console.log($(this));
+      
+      //把"保存"变成"添加"
+      $('#btn').html("添加");
+
+
+     })
+  
+    //给单行删除加点击事件,加载模板块的a标签调用这个函数
+     function deteleTr(id){
+        // console.log(id);
+
+        //发送一个请求
+         $.post({
+             url:"api/deletecategory.php",
+             data:{id:id},
+             success:function(obj){
+                if(obj.trim() == "ok"){
+                      location.reload();
+                }else{
+                   alert("删除失败");
+                }
+             }
+         })
+     }
+
+  // 给全选加点击事件
+    $('thead :checkbox').click(function(){
+        $('tbody :checkbox').prop('checked',this.checked);
+        if (this.checked) {
+             $('#btn-detele').fadeIn();
+        }else{
+           $('#btn-detele').fadeOut();
+        }
+    })
+
+  $('tbody').on('click',':checkbox',function(){
+       if($('tbody :checked').length == $('tbody :checkbox').length){
+             $('thead :checkbox').prop('checked',true);
+       }else{
+           $('thead :checkbox').prop('checked',false);
+       }
+
+       if ($('tbody :checked').length>0) {
+            $('#btn-detele').fadeIn();
+       }else{
+           $('#btn-detele').fadeOut();
+       }
+  })
+     
+  // 注册批量删除的点击事件
+     $('#btn-detele').click(function(){
+          //创建空数组
+          var arr=[];
+     // 传入被多选框被选中的input的标签，遍历，往数组内添加input的标签的value值（即id）
+      $('tbody :checked').each(function(index,ele){   //each 是指遍历跟for循环一样
+          arr.push(ele.value);
+      })
+      //将数组转为字符串
+       var ids=arr.join();
+         // console.log(ids);
+        //发送一个请求
+         $.post({
+            url:"api/deletecategory.php",
+            data:{id:ids},
+            success:function(obj){
+            //  console.log(obj);
+               if(obj.trim()=="ok"){
+                  location.reload();
+               }else{
+                  alert("删除失败");
+               }
+            }
+         })
+         
+     })
+   
+    
+    
+    
+    //发字符串data
+    //接收obj 判断之后处理
+
+ </script>
+ 
+<!-- 
+  1.加载数据
+      1.1 封装一个函数，函数里发起一个获取所有分类的请求（接口不用，以前老早就写好了获取分类的接口）
+      1.2 导入模板
+      1.3 准备模板
+      1.4 调用模板
+
+  
+  2.把全选、全不选那些功能加上
+      2.1 给全选加点击事件
+              拿到自己的状态，赋值给tbody里的checkbox
+      2.2 如果是选中状态，显示批量，否则隐藏
+
+      2.3 用事件委托的形式，把事件注册在tbody，但只能由:checkbox触发
+            判断选中数是否等于总数，如果是全选勾上，否则全选去掉勾
+            如果选中数大于0，就要显示批量，否则隐藏
+
+  
+  3.做新增功能
+        3.1 先写一个新增的接口，两个参数一个name一个slug
+        3.2 给保存加一个id,方便找到它
+        3.3 添加点击事件
+              3.3.1 阻止默认实现
+              3.3.2 发起一个请求，请求刚刚写的接口，传入对应的参数，ok就调用loadData
+
+  
+  4.做编辑功能
+        4.1 写一个函数接收一个id参数，在模板里给编辑加点击事件，调用这个函数并传入自己的id
+        4.2 先准备一个全局变量用来记录查到的数据，在loadData的响应完成里，把数据存在全局变量
+        4.3 在编辑的点击事件里，遍历所有的数据，判断传进的来id是否等于当前遍历到的元素的id，如果等于，代表找到了，就把这个数据渲染到界面
+        4.4 将之前新增那个按钮的文字变为保存
+        4.5 在html里新增一个按钮叫取消（记得改样式）
+        4.6 点击事件里，显示出取消按钮
+        4.7 准备一个专门做修改的接口，传三个参数：name,slug,id
+        4.8 因为新增和修改都是调用同一个点击事件，所以在它这个按钮的点击事件里判断文字，如果文字是新增，那么就发新增的请求，否则就发修改的请求（请求里要发id，所以准备一个全局变量，在编辑的点击事件里记录住id）
+        4.9 响应完成刷新数据，并清空内容，和把按钮文字变为新增，隐藏取消按钮
+
+  5. 取消点击事件
+        清空界面，隐藏取消，按钮文字变新增
+
+
+  6.做删除和批量删除
+        略
+
+-->

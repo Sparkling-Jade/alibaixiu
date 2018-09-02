@@ -1,3 +1,23 @@
+<?php
+  //获取到id
+   $id=$_GET['id'];
+
+   //操作数据库
+     require_once "admin/api/sql/sql_tools.php";
+
+    $sql="select 
+    p.title,u.nickname,p.created,c.name,p.views,p.content from posts p
+    inner join categories c
+    on p.category_id = c.id
+    inner join users u
+    on p.user_id=u.id
+    where p.id=$id";
+
+    $detail=sql_select($sql)[0];
+
+
+?>
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -48,51 +68,7 @@
       <div class="widgets">
         <h4>随机推荐</h4>
         <ul class="body random">
-          <li>
-            <a href="javascript:;">
-              <p class="title">废灯泡的14种玩法 妹子见了都会心动</p>
-              <p class="reading">阅读(819)</p>
-              <div class="pic">
-                <img src="uploads/widget_1.jpg" alt="">
-              </div>
-            </a>
-          </li>
-          <li>
-            <a href="javascript:;">
-              <p class="title">可爱卡通造型 iPhone 6防水手机套</p>
-              <p class="reading">阅读(819)</p>
-              <div class="pic">
-                <img src="uploads/widget_2.jpg" alt="">
-              </div>
-            </a>
-          </li>
-          <li>
-            <a href="javascript:;">
-              <p class="title">变废为宝！将手机旧电池变为充电宝的Better</p>
-              <p class="reading">阅读(819)</p>
-              <div class="pic">
-                <img src="uploads/widget_3.jpg" alt="">
-              </div>
-            </a>
-          </li>
-          <li>
-            <a href="javascript:;">
-              <p class="title">老外偷拍桂林芦笛岩洞 美如“地下彩虹”</p>
-              <p class="reading">阅读(819)</p>
-              <div class="pic">
-                <img src="uploads/widget_4.jpg" alt="">
-              </div>
-            </a>
-          </li>
-          <li>
-            <a href="javascript:;">
-              <p class="title">doge神烦狗打底南瓜裤 就是如此魔性</p>
-              <p class="reading">阅读(819)</p>
-              <div class="pic">
-                <img src="uploads/widget_5.jpg" alt="">
-              </div>
-            </a>
-          </li>
+           <?php require_once "randPosts.php"?>
         </ul>
       </div>
       <div class="widgets">
@@ -184,19 +160,20 @@
         <div class="breadcrumb">
           <dl>
             <dt>当前位置：</dt>
-            <dd><a href="javascript:;">奇趣事</a></dd>
-            <dd>变废为宝！将手机旧电池变为充电宝的Better RE移动电源</dd>
+            <dd><a href="javascript:;"><?php echo $detail['name'];?></a></dd>
+            <dd><?php echo $detail['title'];?></dd>
           </dl>
         </div>
         <h2 class="title">
-          <a href="javascript:;">又现酒窝夹笔盖新技能 城里人是不让人活了！</a>
+          <a href="javascript:;"><?php echo $detail['title'];?></a>
         </h2>
         <div class="meta">
-          <span>DUX主题小秘 发布于 2015-06-29</span>
-          <span>分类: <a href="javascript:;">奇趣事</a></span>
-          <span>阅读: (2421)</span>
+          <span><?php echo $detail['nickname'];?> 发布于 <?php echo $detail['created']?></span>
+          <span>分类: <a href="javascript:;"><?php echo $detail['name']?></a></span>
+          <span>阅读: (<?php echo $detail['views'];?>)</span>
           <span>评论: (143)</span>
         </div>
+        <div><?php echo $detail['content'];?></div>
       </div>
       <div class="panel hots">
         <h3>热门推荐</h3>

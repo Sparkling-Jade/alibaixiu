@@ -1,6 +1,24 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+    <script>
+        //发起一个异步请求,去问服务器有没有session (就是问服务器有没有登录成功)
+            var xhr=new XMLHttpRequest();
+     
+            xhr.open('get','api/checkLogin.php');
+     
+            xhr.send();
+     
+            xhr.onreadystatechange=function(){
+               if(xhr.readyState !==4 ) return;
+     
+               if (xhr.responseText != "ok") {
+                 location= "login.html";
+                 return;
+                 
+               }
+            }
+       </script>
   <meta charset="utf-8">
   <title>Dashboard &laquo; Admin</title>
   <link rel="stylesheet" href="../assets/vendors/bootstrap/css/bootstrap.css">
@@ -8,6 +26,7 @@
   <link rel="stylesheet" href="../assets/vendors/nprogress/nprogress.css">
   <link rel="stylesheet" href="../assets/css/admin.css">
   <script src="../assets/vendors/nprogress/nprogress.js"></script>
+   
 </head>
 <body>
   <script>NProgress.start()</script>
@@ -17,7 +36,7 @@
       <button class="btn btn-default navbar-btn fa fa-bars"></button>
       <ul class="nav navbar-nav navbar-right">
         <li><a href="profile.html"><i class="fa fa-user"></i>个人中心</a></li>
-        <li><a href="login.html"><i class="fa fa-sign-out"></i>退出</a></li>
+       <a href="api/logout.php">             <i class="fa fa-sign-out"></i>退出</a>
       </ul>
     </nav>
     <div class="container-fluid">
@@ -33,7 +52,7 @@
           <label class="col-sm-3 control-label">头像</label>
           <div class="col-sm-6">
             <label class="form-image">
-              <input id="avatar" type="file">
+              <input id="avatar" type="file" name="avatar">
               <img src="../assets/img/default.png">
               <i class="mask fa fa-upload"></i>
             </label>
@@ -63,12 +82,12 @@
         <div class="form-group">
           <label for="bio" class="col-sm-3 control-label">简介</label>
           <div class="col-sm-6">
-            <textarea id="bio" class="form-control" placeholder="Bio" cols="30" rows="6">MAKE IT BETTER!</textarea>
+            <textarea id="bio" class="form-control" name="bio" placeholder="Bio" cols="30" rows="6">MAKE IT BETTER!</textarea>
           </div>
         </div>
         <div class="form-group">
           <div class="col-sm-offset-3 col-sm-6">
-            <button type="submit" class="btn btn-primary">更新</button>
+            <button id="btn" type="submit" class="btn btn-primary">更新</button>
             <a class="btn btn-link" href="password-reset.html">修改密码</a>
           </div>
         </div>
@@ -78,7 +97,7 @@
 
   <div class="aside">
     <div class="profile">
-      <img class="avatar" src="../uploads/avatar.jpg">
+      <img class="avatar" src="../assets/img/default.png">
       <h3 class="name">布头儿</h3>
     </div>
     <ul class="nav">
@@ -119,3 +138,51 @@
   <script>NProgress.done()</script>
 </body>
 </html>
+<script>
+   //获取用户信息发送请求
+   $.get({
+       
+      url:"api/getUserInfo.php",
+      dataType:"json",
+      success:function(obj){
+        console.log(obj);
+        
+         $('.form-image img').attr('src',obj.avatar);
+         $('#email').val(obj.email);
+         $('#slug').val(obj.slug);
+         $('#nickname').val(obj.nickname);
+         $('#bio').val(obj.bio);
+      }  
+
+   })
+//给更新按钮添加点击事件
+ $('#btn').click(function(e){
+   //阻止事件默认行为
+    e=e || window.event;
+   e.preventDefault();
+  //拿到数据发请求
+   var fm=new FormData(document.querySelector('form'));
+  
+   $.post({
+       url:"api/updateUser.php",
+       data:fm,
+       contentType:false,
+       processData:false,
+       success:function(obj){
+           if(obj.trim() =="ok") {
+               location.reload();
+           }else{
+              alert('修改失败');
+           }
+       }
+   })
+ })
+
+  //给上传文件加预览功能
+  $('#avatar').change(function () {
+    var url = URL.createObjectURL(this.files[0]);
+    $('.form-image img').attr('src', url);
+  })
+
+    
+</script>
